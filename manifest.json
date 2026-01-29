@@ -1,0 +1,15 @@
+{
+  "name": "CLINIK Medical Portal",
+  "short_name": "CLINIK",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f4f7fe",
+  "theme_color": "#5c67f2",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3063/3063176.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
