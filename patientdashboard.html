@@ -2,509 +2,502 @@
 <html lang="en">
 <head>
     <link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log("PWA Registered Successfully"));
-  }
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>health care | Patient Dashboard</title>
+    <title>Clinik Pro | Premium Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <style>
         :root {
-            --primary-blue: #5c67f2;
-            --sidebar-blue: #6366f1;
-            --bg-gray: #f4f7fe;
-            --card-radius: 24px;
-            --text-dark: #2d3748;
-            --text-muted: #a0aec0;
-            --danger-red: #ef4444;
+            --primary: #6366f1;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: rgba(226, 232, 240, 0.8);
+            --sidebar: #0f172a;
+            --danger: #ef4444;
+            --success: #10b981;
         }
 
-        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-
-        body {
-            background-color: var(--bg-gray);
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
+        body.dark-theme {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f1f5f9;
+            --border: rgba(51, 65, 85, 0.5);
+            --sidebar: #020617;
         }
 
-        /* --- SIDEBAR --- */
-        .sidebar {
-            width: 260px;
-            background-color: var(--sidebar-blue);
-            color: white;
-            display: flex;
-            flex-direction: column;
-            padding: 30px 20px;
-        }
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; transition: 0.3s; }
+        body { background-color: var(--bg); margin: 0; display: flex; height: 100vh; color: var(--text); overflow: hidden; }
 
-        .logo { font-size: 1.8rem; font-weight: 800; margin-bottom: 40px; letter-spacing: 1px; }
-
+        .sidebar { width: 280px; background-color: var(--sidebar); color: white; display: flex; flex-direction: column; padding: 40px 24px; }
+        .logo { font-size: 1.6rem; font-weight: 800; margin-bottom: 50px; background: linear-gradient(to right, #818cf8, #c084fc); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         nav { flex-grow: 1; }
-        nav a {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: rgba(255,255,255,0.7);
-            text-decoration: none;
-            padding: 12px 20px;
-            border-radius: 12px;
-            margin-bottom: 8px;
-            transition: 0.3s;
-            font-size: 0.95rem;
+        nav a { display: flex; align-items: center; gap: 12px; color: #94a3b8; text-decoration: none; padding: 14px 18px; border-radius: 16px; margin-bottom: 10px; font-weight: 600; cursor: pointer; }
+        nav a.active { background: rgba(255,255,255,0.1); color: white; border-left: 4px solid var(--primary); }
+
+        .main-content { flex-grow: 1; padding: 40px; overflow-y: auto; }
+        .card { background: var(--card-bg); border-radius: 32px; padding: 30px; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.05); border: 1px solid var(--border); margin-bottom: 25px; }
+
+        #alert-banner { 
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); 
+            z-index: 9999; padding: 15px 30px; border-radius: 12px; font-weight: 800; display: none; text-align: center; color: white; background-color: var(--danger);
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+            white-space: pre-line;
         }
 
-        nav a.active { background: rgba(255,255,255,0.2); color: white; }
-        nav a:hover { background: rgba(255,255,255,0.1); }
-
-        .logout-container { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
-        .logout-btn {
-            width: 100%;
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        /* --- MAIN CONTENT --- */
-        .main-content {
-            flex-grow: 1;
-            padding: 30px;
-            overflow-y: auto;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .header-title h1 { margin: 0; font-size: 1.5rem; color: var(--text-dark); }
-
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 25px;
-        }
-
-        .card {
-            background: white;
-            border-radius: var(--card-radius);
-            padding: 25px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.02);
-            border: 1px solid #edf2f7;
-            margin-bottom: 20px;
-        }
-
-        .vitals-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .vital-mini {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: #f8fafc;
-            padding: 15px;
-            border-radius: 18px;
-        }
-
-        .vital-icon {
-            width: 40px; height: 40px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center; justify-content: center;
-            color: var(--primary-blue);
-        }
-
-        /* --- TABLE STYLING --- */
-        .history-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 0.9rem;
-        }
-        .history-table th, .history-table td {
-            text-align: left;
-            padding: 12px;
-            border-bottom: 1px solid #edf2f7;
-        }
-        .history-table th { color: var(--text-muted); font-weight: 600; }
-
-        .btn-action {
-            border: none;
-            padding: 8px 15px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-weight: 600;
-        }
+        .btn-emergency { background: var(--danger); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
+        .btn-emergency:hover { transform: scale(1.05); background: #dc2626; }
         
-        .btn-csv { background: #10b981; color: white; float: right; }
-        .btn-view { background: var(--primary-blue); color: white; margin-top: 20px; }
+        .btn-prescription, .btn-appointment { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; margin-top: 15px; width: 100%; justify-content: center; }
+        .btn-prescription:hover, .btn-appointment:hover { opacity: 0.9; }
 
-        /* --- NOTIFICATION TOASTS --- */
-        #alert-toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #333;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 12px;
-            display: none;
-            animation: slideUp 0.3s ease;
-            z-index: 1000;
-        }
+        .btn-export { background: var(--success); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; }
 
-        #bpm-warning {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--danger-red);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 12px;
-            display: none;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
-            z-index: 1001;
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        /* Profile */
-        .profile-section { text-align: center; }
-        .profile-img {
-            width: 100px; height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .btn-edit {
-            background: transparent;
-            border: 1px solid var(--primary-blue);
-            color: var(--primary-blue);
-            padding: 8px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-
-        .apt-form { display: flex; flex-direction: column; gap: 15px; }
-        .apt-form input, .apt-form select { padding: 12px; border: 1px solid #ddd; border-radius: 10px; }
-        .btn-book { background: var(--primary-blue); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer; font-weight: 600; }
+        .notif-btn { position: relative; background: var(--card-bg); border: 1px solid var(--border); padding: 10px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .notif-badge { position: absolute; top: -2px; right: -2px; background: var(--danger); width: 10px; height: 10px; border-radius: 50%; display: none; border: 2px solid var(--bg); }
+        .notif-dropdown { position: absolute; top: 55px; right: 0; width: 300px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 15px 30px rgba(0,0,0,0.1); display: none; z-index: 1000; overflow: hidden; }
+        .notif-header { padding: 15px 20px; font-weight: 800; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+        .notif-list { max-height: 300px; overflow-y: auto; }
+        .notif-item { padding: 15px 20px; border-bottom: 1px solid var(--border); font-size: 0.85rem; line-height: 1.4; }
 
         .content-view { display: none; }
-        .content-view.active { display: block; }
+        .content-view.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* History Container Hidden by Default */
-        #history-container { display: none; margin-top: 20px; }
+        .vital-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .vital-card { display: flex; align-items: center; gap: 15px; padding: 20px; border-radius: 24px; background: var(--card-bg); border: 1px solid var(--border); }
+
+        .analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .chart-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 24px; padding: 20px; height: 250px; }
+
+        .history-table { width: 100%; border-collapse: collapse; margin-top: 20px; min-width: 1000px; }
+        .history-table th, .history-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+        .history-table th { color: var(--text-muted); text-transform: uppercase; }
+
+        .booking-form input, .booking-form select { width: 100%; padding: 12px; margin-top: 8px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+        .presc-item { background: var(--bg); padding: 12px; border-radius: 12px; margin-bottom: 8px; border-left: 4px solid var(--primary); font-size: 0.9rem; }
     </style>
 </head>
-<body>
+<body class="light-theme">
 
-    <div id="alert-toast">New data synchronized!</div>
-    <div id="bpm-warning">⚠️ HEART RATE ALERT!</div>
+    <div id="alert-banner"></div>
+    <audio id="alert-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
 
     <aside class="sidebar">
-        <div class="logo">CLINIK</div>
-        <nav id="sidebar-nav">
-            <a href="#" class="active" onclick="showSection('overview', this)"><i data-lucide="layout-grid"></i> Schedule</a>
-            <a href="#" onclick="showSection('appointments', this)"><i data-lucide="calendar"></i> Appointments</a>
-            <a href="#" onclick="showSection('analytics', this)"><i data-lucide="bar-chart-2"></i> Statistics</a>
-            <a href="#" onclick="showSection('reports', this)"><i data-lucide="file-text"></i> Reports</a>
+        <div class="logo">Clinik Pro</div>
+        <nav>
+            <a class="active" onclick="showSection('overview', this)"><i data-lucide="layout"></i> Overview</a>
+            <a onclick="showSection('analytics', this)"><i data-lucide="activity"></i> Analytics</a>
+            <a onclick="showSection('appointments', this)"><i data-lucide="calendar"></i> Appointments</a>
+            <a onclick="showSection('history', this)"><i data-lucide="scroll-text"></i> History Log</a>
+            <a onclick="showSection('patient-profile', this)"><i data-lucide="user"></i> Profile</a>
+            <a onclick="showSection('settings', this)"><i data-lucide="settings"></i> Settings</a>
         </nav>
-
-        <div class="logout-container">
-            <button class="logout-btn" onclick="handleLogout()">
-                <i data-lucide="log-out"></i> Logout
-            </button>
-        </div>
+        <button onclick="handleLogout()" style="background:rgba(239,68,68,0.1); color:#ef4444; border:none; padding:15px; border-radius:16px; cursor:pointer; font-weight:700;">Logout</button>
     </aside>
 
     <main class="main-content">
-        <header>
-            <div class="header-title">
-                <h1 id="page-title">Patient profile</h1>
-            </div>
-            <div class="header-actions">
-                <button class="btn-edit">PRINT</button>
-                <button class="btn-edit" style="background:var(--primary-blue); color:white;">EDIT</button>
+        <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+            <h1 id="welcome-title">Dashboard</h1>
+            <div style="display: flex; align-items: center; gap: 15px; position: relative;">
+                <button class="btn-emergency" onclick="handleEmergency()">
+                    <i data-lucide="phone-forwarded"></i> Emergency Call
+                </button>
+                <button class="notif-btn" id="pwa-notif-setup" onclick="requestNotificationPermission()" title="Enable Desktop Alerts">
+                    <i data-lucide="bell-ring" style="color: var(--primary);"></i>
+                </button>
+                <div id="sync-indicator" style="color:#10b981; font-weight:bold;">● LIVE</div>
+                <div class="notif-btn" onclick="toggleNotifications(event)">
+                    <i data-lucide="bell"></i>
+                    <div id="notif-badge" class="notif-badge"></div>
+                    <div id="notif-dropdown" class="notif-dropdown">
+                        <div class="notif-header">
+                            <span>Notifications</span>
+                            <small onclick="clearNotifications(event)" style="color:var(--primary); cursor:pointer;">Clear</small>
+                        </div>
+                        <div id="notif-list" class="notif-list">
+                            <div style="padding:20px; text-align:center; color:var(--text-muted);">No new alerts</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </header>
 
-        <div class="grid-layout">
-            <div class="left-col">
-                <div id="overview" class="content-view active">
-                    <div class="card">
-                        <h3>General Information</h3>
-                        <div class="vitals-grid">
-                            <div class="vital-mini">
-                                <div class="vital-icon"><i data-lucide="heart"></i></div>
-                                <div><small>Heart Rate</small><p id="val-f1">Loading...</p></div>
-                            </div>
-                            <div class="vital-mini">
-                                <div class="vital-icon"><i data-lucide="thermometer"></i></div>
-                                <div><small>Body Temp</small><p id="val-f2">Loading...</p></div>
-                            </div>
-                        </div>
-                    </div>
+        <div id="overview" class="content-view active">
+            <div class="vital-grid">
+                <div class="vital-card"><i data-lucide="heart" style="color:var(--danger)"></i><div><small>Bpm</small><h3 id="val-f1">--</h3></div></div>
+                <div class="vital-card"><i data-lucide="activity" style="color:var(--primary)"></i><div><small>Avg.bpm</small><h3 id="val-f2">--</h3></div></div>
+                <div class="vital-card"><i data-lucide="move" style="color:#f59e0b"></i><div><small>accl(x,y,z)</small><h3 id="val-f3">--</h3></div></div>
+                <div class="vital-card"><i data-lucide="rotate-cw" style="color:#8b5cf6"></i><div><small>gyro(x,y,z)</small><h3 id="val-f4">--</h3></div></div>
+                <div class="vital-card"><i data-lucide="eye" style="color:#06b6d4"></i><div><small>IR</small><h3 id="val-f5">--</h3></div></div>
+                <div class="vital-card"><i data-lucide="thermometer" style="color:#ef4444"></i><div><small>Tem</small><h3 id="val-f6">--</h3></div></div>
+                <div class="vital-card"><i data-lucide="droplets" style="color:#3b82f6"></i><div><small>Hum</small><h3 id="val-f7">--</h3></div></div>
+                <div class="vital-card"><i data-lucide="zap" style="color:#10b981"></i><div><small>gyro total</small><h3 id="val-f8">--</h3></div></div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px; margin-top: 25px;">
+                <div class="card" style="margin-bottom:0;">
+                    <h3>Health Summary</h3>
+                    <p id="data-source-info" style="color:var(--text-muted)">Sensor monitoring active. Dashboard is listening for live patient BPM data.</p>
                 </div>
-
-                <div id="appointments" class="content-view">
-                    <div class="card">
-                        <h3>Book an Appointment</h3>
-                        <form class="apt-form" id="aptForm">
-                            <label>Select Date</label>
-                            <input type="date" id="aptDate" required>
-                            <label>Select Time</label>
-                            <input type="time" id="aptTime" required>
-                            <label>Department</label>
-                            <select id="dept">
-                                <option>Cardiology</option>
-                                <option>Neurology</option>
-                                <option>General Checkup</option>
-                            </select>
-                            <button type="submit" class="btn-book">Confirm Appointment</button>
-                        </form>
+                <div class="card" style="margin-bottom:0;">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+                        <i data-lucide="clipboard-list" style="color:var(--primary);"></i>
+                        <h4 style="margin:0;">Recent Prescriptions</h4>
                     </div>
+                    <div id="prescription-list" style="max-height: 150px; overflow-y:auto;">
+                        <p style="color:var(--text-muted); font-size:0.8rem;">No prescriptions revised yet.</p>
+                    </div>
+                    <button class="btn-prescription" onclick="handleAddPrescription()">
+                        <i data-lucide="plus"></i> Add Note/Meds
+                    </button>
                 </div>
+            </div>
+        </div>
 
-                <div id="analytics" class="content-view">
-                    <div class="card">
-                        <button class="btn-action btn-csv" onclick="exportToCSV()">
-                            <i data-lucide="download" style="width:14px"></i> Export CSV
+        <div id="appointments" class="content-view">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+                <div class="card">
+                    <h3>Book Appointment</h3>
+                    <div class="booking-form">
+                        <label>Select Doctor</label>
+                        <select id="appt-doctor">
+                            <option value="Dr. Smith (Cardiologist)">Dr. Smith (Cardiologist)</option>
+                            <option value="Dr. Sarah (Neurologist)">Dr. Sarah (Neurologist)</option>
+                            <option value="Dr. John (General Physician)">Dr. John (General Physician)</option>
+                        </select>
+                        <label style="display:block; margin-top:15px;">Select Date</label>
+                        <input type="date" id="appt-date">
+                        <label style="display:block; margin-top:15px;">Select Time</label>
+                        <input type="time" id="appt-time">
+                        <button class="btn-appointment" onclick="handleBookAppointment()">
+                            <i data-lucide="calendar-plus"></i> Confirm Booking
                         </button>
-                        <h3>Live Health Records</h3>
-                        <div class="vitals-grid">
-                            <div class="vital-mini">
-                                <div><small>Pulse</small><h2 id="stats-heart">--</h2></div>
-                            </div>
-                            <div class="vital-mini">
-                                <div><small>Temp</small><h2 id="stats-temp">--</h2></div>
-                            </div>
-                        </div>
-
-                        <button class="btn-action btn-view" id="toggle-history-btn" onclick="toggleHistory()">
-                            <i data-lucide="history" style="width:16px"></i> Show Record History
-                        </button>
-
-                        <div id="history-container">
-                            <h4 style="margin-top:20px">Detailed Record Log</h4>
-                            <div style="overflow-x:auto;">
-                                <table class="history-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Time</th>
-                                            <th>Pulse (bpm)</th>
-                                            <th>Temp (°C)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="history-body">
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
                     </div>
                 </div>
-
-                <div id="reports" class="content-view">
-                    <div class="card">
-                        <h3>Medical Reports</h3>
-                        <p>No new reports available.</p>
+                <div class="card">
+                    <h3>Scheduled Sessions</h3>
+                    <div id="appointment-list" style="margin-top:15px;">
+                        <p style="color:var(--text-muted); text-align:center;">No upcoming appointments.</p>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="right-col">
-                <div class="card profile-section">
-                    <img src="https://i.pravatar.cc/150?u=kate" class="profile-img" alt="User">
-                    <h2 id="display-name">Kate Prokopchuk</h2>
-                    <p style="color:var(--text-muted)">+38 (093) 23 45 678</p>
-                    <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
-                    <div style="text-align:left;">
-                        <small style="color:var(--text-muted)">Anamnesis</small>
-                        <p><strong>Allergies:</strong> Nuts, pollen</p>
-                        <p><strong>Blood Type:</strong> B+</p>
-                    </div>
+        <div id="analytics" class="content-view">
+            <div class="analytics-grid">
+                <div class="chart-box"><canvas id="c1"></canvas></div>
+                <div class="chart-box"><canvas id="c2"></canvas></div>
+                <div class="chart-box"><canvas id="c3"></canvas></div>
+                <div class="chart-box"><canvas id="c4"></canvas></div>
+                <div class="chart-box"><canvas id="c5"></canvas></div>
+                <div class="chart-box"><canvas id="c6"></canvas></div>
+                <div class="chart-box"><canvas id="c7"></canvas></div>
+                <div class="chart-box"><canvas id="c8"></canvas></div>
+            </div>
+        </div>
+
+        <div id="history" class="content-view">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3>Full Data Log</h3>
+                    <button class="btn-export" onclick="exportToCSV()">
+                        <i data-lucide="download"></i> Export CSV
+                    </button>
                 </div>
+                <div style="overflow-x: auto;">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th><th>Bpm</th><th>Avg.bpm</th><th>accl</th><th>gyro</th>
+                                <th>IR</th><th>Tem</th><th>Hum</th><th>gyro total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-log-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="patient-profile" class="content-view">
+            <div class="card" style="text-align:center;">
+                <div style="width:80px; height:80px; border-radius:50%; background:var(--bg); margin:0 auto 15px; display:flex; align-items:center; justify-content:center;">
+                    <i data-lucide="user" style="color:var(--primary)"></i>
+                </div>
+                <h2 id="prof-name">Patient Name</h2>
+                <p id="prof-email">email@example.com</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left; margin-top:20px;">
+                    <div><small style="color:var(--text-muted)">Patient ID</small><p>#CP-8821</p></div>
+                    <div><small style="color:var(--text-muted)">Status</small><p style="color:var(--success)">Active</p></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="settings" class="content-view">
+            <div class="card">
+                <h3>Settings</h3>
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="darkToggle" onchange="toggleDarkMode()" style="width:20px; height:20px;"> 
+                    <span>Enable Dark Mode</span>
+                </label>
             </div>
         </div>
     </main>
 
     <script>
-        lucide.createIcons();
+        const fieldNames = ["Bpm", "Avg.bpm", "accl(x,y,z)", "gyro(x,y,z)", "IR", "Tem", "Hum", "gyro total"];
+        let charts = [];
+        let iotData = [];
+        let notifications = [];
 
-        // 1. DATA PERSISTENCE LOGIC
-        let healthHistory = JSON.parse(localStorage.getItem('persistentHealthHistory')) || [];
+        // --- NEW SYNC LOGIC START ---
+        function syncWithLocalPatientData() {
+            // Get data broadcasted from the patient dashboard
+            const rawData = localStorage.getItem('patient_vitals');
+            if (!rawData) return;
 
-        function renderHistoryTable() {
-            const tbody = document.getElementById('history-body');
-            tbody.innerHTML = ""; 
-            healthHistory.slice().reverse().forEach(record => {
-                const row = `<tr><td>${record.time}</td><td>${record.pulse}</td><td>${record.temp}</td></tr>`;
-                tbody.insertAdjacentHTML('beforeend', row);
-            });
+            const sharedData = JSON.parse(rawData);
+            
+            // If the data is fresh (within last 10 seconds), display it immediately
+            const lastUpdate = new Date(sharedData.timestamp);
+            const now = new Date();
+            
+            // Only update if it's the right patient or we are in general monitoring mode
+            const currentPatientEmail = localStorage.getItem('userEmail');
+            if (sharedData.email === currentPatientEmail) {
+                // Update the BPM Field (Field 1) and Temperature (Field 6)
+                updateSingleField(1, sharedData.bpm);
+                updateSingleField(6, sharedData.temp);
+                
+                document.getElementById('sync-indicator').innerText = "● LIVE (LOCAL SYNC)";
+                document.getElementById('sync-indicator').style.color = "var(--primary)";
+            }
         }
 
-        // Toggle visibility function
-        function toggleHistory() {
-            const container = document.getElementById('history-container');
-            const btn = document.getElementById('toggle-history-btn');
-            
-            if (container.style.display === "none" || container.style.display === "") {
-                container.style.display = "block";
-                btn.innerHTML = `<i data-lucide="eye-off" style="width:16px"></i> Hide Record History`;
-                renderHistoryTable(); 
-            } else {
-                container.style.display = "none";
-                btn.innerHTML = `<i data-lucide="history" style="width:16px"></i> Show Record History`;
+        function updateSingleField(fieldNum, value) {
+            const valEl = document.getElementById(`val-f${fieldNum}`);
+            if (valEl && value) {
+                valEl.innerText = value;
+                // Add to chart immediately
+                if (charts[fieldNum-1]) {
+                    const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+                    charts[fieldNum-1].data.labels.push(now);
+                    charts[fieldNum-1].data.datasets[0].data.push(value);
+                    
+                    if(charts[fieldNum-1].data.labels.length > 20) {
+                        charts[fieldNum-1].data.labels.shift();
+                        charts[fieldNum-1].data.datasets[0].data.shift();
+                    }
+                    charts[fieldNum-1].update('none');
+                }
             }
+        }
+        // --- NEW SYNC LOGIC END ---
+
+        async function requestNotificationPermission() {
+            if (!("Notification" in window)) return;
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+                new Notification("Clinik Pro", { body: "Desktop alerts enabled!", icon: "https://cdn-icons-png.flaticon.com/512/3063/3063176.png" });
+                document.getElementById('pwa-notif-setup').style.display = 'none';
+            }
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        function handleBookAppointment() {
+            const doctor = document.getElementById('appt-doctor').value;
+            const date = document.getElementById('appt-date').value;
+            const time = document.getElementById('appt-time').value;
+            if (!date || !time) return alert("Select date/time");
+            let doctorView = JSON.parse(localStorage.getItem('doctorAppointments') || "[]");
+            doctorView.push({ doctor, date, time, status: "Pending" });
+            localStorage.setItem('doctorAppointments', JSON.stringify(doctorView));
+            updateAppointmentUI();
+        }
+
+        function updateAppointmentUI() {
+            const list = document.getElementById('appointment-list');
+            let data = JSON.parse(localStorage.getItem('doctorAppointments') || "[]");
+            list.innerHTML = data.length ? data.map(a => `
+                <div style="background:var(--bg); padding:15px; border-radius:16px; margin-bottom:10px; border:1px solid var(--border);">
+                    <div style="font-weight:bold; color:var(--primary);">${a.doctor}</div>
+                    <div>${a.date} at ${a.time}</div>
+                </div>`).join('') : '<p style="color:var(--text-muted); text-align:center;">No upcoming appointments.</p>';
+        }
+
+        function updatePrescriptionUI() {
+            const container = document.getElementById('prescription-list');
+            let prescriptions = JSON.parse(localStorage.getItem('patientPrescriptions') || "[]");
+            container.innerHTML = prescriptions.length ? prescriptions.map(p => `
+                <div class="presc-item"><strong>${p.name}</strong><br><small>${p.date}</small></div>`).join('') : 
+                '<p style="color:var(--text-muted); font-size:0.8rem;">No prescriptions revised yet.</p>';
+        }
+
+        function handleAddPrescription() {
+            const medication = prompt("Enter Medication:");
+            if(medication) {
+                let prescriptions = JSON.parse(localStorage.getItem('patientPrescriptions') || "[]");
+                prescriptions.unshift({ name: medication, date: new Date().toLocaleDateString() });
+                localStorage.setItem('patientPrescriptions', JSON.stringify(prescriptions));
+                updatePrescriptionUI();
+            }
+        }
+
+        function checkAlerts(bpm, accl, gyroTotal) {
+            const banner = document.getElementById('alert-banner');
+            const sound = document.getElementById('alert-sound');
+            let alerts = [];
+            if (bpm > 100) alerts.push("⚠️ CRITICAL: HIGH HEART RATE!");
+            else if (bpm < 40 && bpm > 0) alerts.push("⚠️ CRITICAL: HEART RATE FALLEN!");
+            if (accl > 1.5) alerts.push("🚨 FALL DETECTED: SUDDEN IMPACT!");
+            if (gyroTotal > 200) alerts.push("🚨 FALL DETECTED: RAPID MOVEMENT!");
+            
+            if (alerts.length > 0) {
+                banner.style.display = "block";
+                banner.innerText = alerts.join('\n');
+                sound.play().catch(() => {});
+                if (Notification.permission === "granted") {
+                    new Notification("CLINIK PRO EMERGENCY", { body: alerts[0], icon: "https://cdn-icons-png.flaticon.com/512/3063/3063176.png" });
+                }
+                alerts.forEach(a => addNotification(a));
+            } else { 
+                banner.style.display = "none"; 
+            }
+        }
+
+        async function fetchIoT() {
+            const storedID = localStorage.getItem('tsID');
+            const storedKey = localStorage.getItem('tsKey');
+            if (!storedID || !storedKey) return;
+
+            try {
+                const res = await fetch(`https://api.thingspeak.com/channels/${storedID}/feeds.json?api_key=${storedKey}&results=20`);
+                const data = await res.json();
+                if(!data.feeds || data.feeds.length === 0) return;
+
+                iotData = data.feeds;
+                const last = iotData[iotData.length-1];
+                const labels = iotData.map(f => new Date(f.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+                
+                for(let i=1; i<=8; i++) {
+                    const valEl = document.getElementById(`val-f${i}`);
+                    if(valEl) valEl.innerText = last[`field${i}`] || "--";
+                    if(charts[i-1]) {
+                        charts[i-1].data.labels = labels;
+                        charts[i-1].data.datasets[0].data = iotData.map(f => f[`field${i}`]);
+                        charts[i-1].update('none');
+                    }
+                }
+                updateHistoryLog();
+                checkAlerts(parseFloat(last.field1), parseFloat(last.field3), parseFloat(last.field8));
+                document.getElementById('sync-indicator').innerText = "● LIVE (THINGSPEAK)";
+                document.getElementById('sync-indicator').style.color = "var(--success)";
+            } catch (e) { console.error("IoT Fetch Error", e); }
+        }
+
+        function initCharts() {
+            const colors = ['#ef4444', '#6366f1', '#f59e0b', '#8b5cf6', '#06b6d4', '#ef4444', '#3b82f6', '#10b981'];
+            for(let i=1; i<=8; i++) {
+                const canvas = document.getElementById(`c${i}`);
+                if(!canvas) continue;
+                const ctx = canvas.getContext('2d');
+                charts[i-1] = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: [], datasets: [{ label: fieldNames[i-1], borderColor: colors[i-1], data: [], tension: 0.4 }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        }
+
+        function updateHistoryLog() {
+            const body = document.getElementById('history-log-body');
+            if(body) {
+                body.innerHTML = iotData.slice().reverse().map(f => `
+                    <tr>
+                        <td>${new Date(f.created_at).toLocaleTimeString()}</td>
+                        <td>${f.field1 || '--'}</td><td>${f.field2 || '--'}</td>
+                        <td>${f.field3 || '--'}</td><td>${f.field4 || '--'}</td>
+                        <td>${f.field5 || '--'}</td><td>${f.field6 || '--'}</td>
+                        <td>${f.field7 || '--'}</td><td>${f.field8 || '--'}</td>
+                    </tr>`).join('');
+            }
+        }
+
+        function addNotification(msg) {
+            notifications.unshift({ text: msg, time: new Date().toLocaleTimeString() });
+            const badge = document.getElementById('notif-badge');
+            if(badge) badge.style.display = 'block';
+            updateNotifList();
+        }
+
+        function updateNotifList() {
+            const list = document.getElementById('notif-list');
+            if(list) {
+                list.innerHTML = notifications.map(n => `<div class="notif-item"><strong>${n.text}</strong><br><small>${n.time}</small></div>`).join('');
+            }
+        }
+
+        function clearNotifications(e) {
+            e.stopPropagation();
+            notifications = [];
+            updateNotifList();
+            document.getElementById('notif-badge').style.display = 'none';
+        }
+
+        function showSection(id, el) {
+            document.querySelectorAll('.content-view').forEach(v => v.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+            el.classList.add('active');
             lucide.createIcons();
         }
 
-        // 2. Navigation
-        function showSection(sectionId, element) {
-            document.querySelectorAll('.content-view').forEach(v => v.classList.remove('active'));
-            document.getElementById(sectionId).classList.add('active');
-            document.querySelectorAll('#sidebar-nav a').forEach(a => a.classList.remove('active'));
-            element.classList.add('active');
-            document.getElementById('page-title').innerText = sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
-        }
-
-        // 3. THING SPEAK INTEGRATION
-        const CHANNEL_ID = '3218730';
-        const READ_API_KEY = 'LD1IMABWITKH2TZK';
-
-        function showSyncAlert() {
-            const toast = document.getElementById('alert-toast');
-            toast.style.display = 'block';
-            setTimeout(() => { toast.style.display = 'none'; }, 2500);
-        }
-
-        // NEW BPM NOTIFICATION ALERT
-        function checkBpmHealth(bpm) {
-            const warning = document.getElementById('bpm-warning');
-            const bpmVal = parseInt(bpm);
-            
-            if (bpmVal > 100) {
-                warning.innerHTML = `⚠️ HIGH BPM ALERT: ${bpmVal}`;
-                warning.style.display = 'block';
-                setTimeout(() => { warning.style.display = 'none'; }, 5000);
-            } else if (bpmVal < 60 && bpmVal > 0) {
-                warning.innerHTML = `⚠️ LOW BPM ALERT: ${bpmVal}`;
-                warning.style.display = 'block';
-                setTimeout(() => { warning.style.display = 'none'; }, 5000);
-            } else {
-                warning.style.display = 'none';
-            }
-        }
-
-        async function fetchHealthData() {
-            try {
-                const response = await fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_API_KEY}&results=1`);
-                const data = await response.json();
-                const lastFeed = data.feeds[0];
-
-                if (lastFeed) {
-                    const pulse = lastFeed.field1 || '0';
-                    const temp = lastFeed.field2 || '0';
-                    const time = new Date().toLocaleString();
-
-                    // Update UI
-                    document.getElementById('val-f1').innerText = pulse + " bpm";
-                    document.getElementById('val-f2').innerText = temp + " °C";
-                    document.getElementById('stats-heart').innerText = pulse + " bpm";
-                    document.getElementById('stats-temp').innerText = temp + " °C";
-
-                    // Check for heart rate abnormalities
-                    checkBpmHealth(pulse);
-
-                    // Update Array & Storage
-                    healthHistory.push({ time, pulse, temp });
-                    localStorage.setItem('persistentHealthHistory', JSON.stringify(healthHistory));
-
-                    if (document.getElementById('history-container').style.display === "block") {
-                        renderHistoryTable();
-                    }
-                    showSyncAlert();
-                }
-            } catch (error) { console.error("ThingSpeak Error:", error); }
-        }
-
-        fetchHealthData();
-        setInterval(fetchHealthData, 15000);
+        function toggleDarkMode() { document.body.classList.toggle('dark-theme'); }
+        function handleLogout() { localStorage.clear(); window.location.href = 'index.html'; }
+        function toggleNotifications(e) { e.stopPropagation(); const d = document.getElementById('notif-dropdown'); d.style.display = d.style.display === 'block' ? 'none' : 'block'; }
+        function handleEmergency() { alert("Initiating emergency call to your primary physician..."); }
 
         function exportToCSV() {
-            if (healthHistory.length === 0) {
-                alert("No records to export yet!");
-                return;
-            }
-            let csvContent = "data:text/csv;charset=utf-8,Time,Pulse (bpm),Temp (C)\n";
-            healthHistory.forEach(row => {
-                csvContent += `"${row.time}",${row.pulse},${row.temp}\n`;
+            let csv = "Time,Bpm,Avg.Bpm,Accl,Gyro,IR,Tem,Hum,GyroTotal\n";
+            iotData.forEach(f => {
+                csv += `${f.created_at},${f.field1},${f.field2},${f.field3},${f.field4},${f.field5},${f.field6},${f.field7},${f.field8}\n`;
             });
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "health_history.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'health_data.csv');
+            a.click();
         }
 
-        // 1. Session Guard: If no user is logged in, send them back to login
-// Ensure 'index.html' matches your actual login filename
-if (!localStorage.getItem('userRole')) {
-    window.location.href = 'index.html'; 
-}
+        window.onclick = () => {
+            const drop = document.getElementById('notif-dropdown');
+            if(drop) drop.style.display = 'none';
+        }
 
-// 2. Updated Logout Function
-function handleLogout() {
-    if(confirm("Are you sure you want to logout?")) {
-        // Clear the session
-        localStorage.removeItem('userRole'); 
-        
-        // Redirect to login page
-        // IMPORTANT: Change 'index.html' to your actual login file name if different
-        window.location.replace('index.html');
-    }
-}
+        window.onload = () => {
+            lucide.createIcons();
+            initCharts();
+            fetchIoT();
+            updateAppointmentUI();
+            updatePrescriptionUI();
+            
+            // Interval 1: Remote Fetch (ThingSpeak) - every 15s
+            setInterval(fetchIoT, 15000);
+
+            // Interval 2: Local Sync (Patient Dashboard Bridge) - every 3s
+            setInterval(syncWithLocalPatientData, 3000);
+            
+            document.getElementById('prof-name').innerText = localStorage.getItem('userName') || "Patient User";
+            document.getElementById('prof-email').innerText = localStorage.getItem('userEmail') || "patient@clinikpro.com";
+        };
     </script>
-    <script>
-    // If user is not logged in, redirect to login page immediately
-    if (!localStorage.getItem('userRole')) {
-        window.location.replace('index.html');
-    }
-
-    function logout() {
-        localStorage.removeItem('userRole');
-        window.location.replace('index.html');
-    }
-</script>
 </body>
 </html>
