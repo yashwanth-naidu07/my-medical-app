@@ -1,31 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log("PWA Registered Successfully"));
-  }
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CLINIK PRO | Doctor Portal</title>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary: #5c67f2;
-            --sidebar: #1e293b;
-            --bg: #f4f7fe;
-            --danger: #ef4444;
-            --success: #10b981;
-            --warning: #f59e0b;
+            --primary: #5c67f2; --sidebar: #1e293b; --bg: #f4f7fe;
+            --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
         }
-
         * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
-
-        /* --- SIDEBAR --- */
+        
         .sidebar { width: 260px; background-color: var(--sidebar); color: white; display: flex; flex-direction: column; padding: 30px 20px; }
         .logo { font-size: 1.8rem; font-weight: 800; margin-bottom: 40px; color: #818cf8; }
         nav { flex-grow: 1; }
@@ -33,23 +21,23 @@
         nav a:hover { color: white; background: rgba(255,255,255,0.05); }
         nav a.active { background: var(--primary); color: white; }
 
-        /* --- CONTENT AREA --- */
         .main-content { flex-grow: 1; padding: 30px; overflow-y: auto; }
-        .view-section { display: none; } /* Hidden by default */
-        .view-section.active { display: block; } /* Shown when active */
-
+        .view-section { display: none; }
+        .view-section.active { display: block; }
         .card { background: white; border-radius: 24px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.02); margin-bottom: 30px; }
+        
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; color: #a0aec0; padding: 15px; border-bottom: 2px solid #f4f7fe; }
         td { padding: 15px; border-bottom: 1px solid #f4f7fe; }
-
+        
         .status-pill { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
-        .critical { background: #fee2e2; color: var(--danger); }
         .stable { background: #dcfce7; color: var(--success); }
-        .pending { background: #fef3c7; color: var(--warning); }
-
+        .pulse-text { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
+        
+        .btn-action { padding: 8px 12px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .btn-rx { background: #e0e7ff; color: var(--primary); }
         .btn-logout { background: var(--danger); color: white; border: none; width: 100%; padding: 12px; border-radius: 12px; cursor: pointer; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; }
     </style>
 </head>
@@ -59,8 +47,7 @@
         <div class="logo">CLINIK PRO</div>
         <nav id="main-nav">
             <a onclick="showView('overview')" class="active" id="nav-overview"><i data-lucide="layout-dashboard"></i> Overview</a>
-            <a onclick="showView('appointments')" id="nav-appointments"><i data-lucide="calendar"></i> Appointments</a>
-            <a onclick="showView('patients')" id="nav-patients"><i data-lucide="users"></i> Patient Details</a>
+            <a onclick="showView('patients')" id="nav-patients"><i data-lucide="users"></i> Patient List</a>
         </nav>
         <button class="btn-logout" onclick="handleLogout()">
             <i data-lucide="log-out"></i> Logout
@@ -69,123 +56,206 @@
 
     <main class="main-content">
         <header>
-            <h1 id="view-title">Welcome, Dr. Smith</h1>
-            <div class="card" style="margin:0; padding: 10px 20px; display:flex; align-items:center; gap:10px;">
-                <i data-lucide="bell" style="color: var(--danger);"></i>
-                <span id="alert-text">System Normal</span>
+            <h1 id="view-title">Welcome, Doctor</h1>
+            <div class="card" style="margin:0; padding: 10px 20px; display:flex; align-items:center; gap:10px; cursor:pointer;" onclick="requestNotificationPermission()">
+                <i data-lucide="bell" id="bell-icon"></i>
+                <span id="alert-text">Sync: Active</span>
             </div>
         </header>
 
         <div id="view-overview" class="view-section active">
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-                <div class="card"><h3>1,284</h3><p>Total Patients</p></div>
-                <div class="card"><h3>8</h3><p>Today's Tasks</p></div>
-                <div class="card"><h3>3</h3><p>Critical Alerts</p></div>
+                <div class="card">
+                    <h3 id="stat-patients">0</h3>
+                    <p style="color: #718096;">Registered Patients</p>
+                </div>
+                <div class="card">
+                    <h3 id="monitored-name">None Selected</h3>
+                    <p style="color: #718096;">Monitoring Target</p>
+                </div>
+                <div class="card">
+                    <h3 id="stat-alerts" style="color: var(--danger);">0</h3>
+                    <p style="color: #718096;">Urgent Alerts</p>
+                </div>
             </div>
-        </div>
 
-        <div id="view-appointments" class="view-section">
             <div class="card">
-                <h3>Today's Schedule</h3>
-                <table>
-                    <thead>
-                        <tr><th>Time</th><th>Patient</th><th>Reason</th><th>Status</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>09:00 AM</td><td>John Doe</td><td>General Checkup</td><td><span class="status-pill stable">Confirmed</span></td></tr>
-                        <tr><td>10:30 AM</td><td>Sarah Miller</td><td>Follow-up</td><td><span class="status-pill pending">Waiting</span></td></tr>
-                    </tbody>
-                </table>
+                <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        <h3>Remote Patient Pulse (BPM)</h3>
+                        <p id="sync-status" style="color: var(--success); font-size: 0.8rem;">● Receiving data from Patient Dashboard</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span id="active-pulse-val" class="pulse-text">-- BPM</span>
+                    </div>
+                </div>
+                <div style="height: 300px;">
+                    <canvas id="vitalsChart"></canvas>
+                </div>
             </div>
         </div>
 
         <div id="view-patients" class="view-section">
             <div class="card">
-                <h3>Live Monitoring (IoT Sync)</h3>
+                <h3>Select Patient to View Remote Data</h3>
                 <table>
                     <thead>
-                        <tr><th>Patient Name</th><th>Pulse Rate</th><th>Body Temp</th><th>Condition</th></tr>
-                    </thead>
-                    <tbody>
                         <tr>
-                            <td><strong>Kate Prokopchuk</strong></td>
-                            <td id="live-pulse">-- bpm</td>
-                            <td id="live-temp">-- °C</td>
-                            <td><span id="live-status" class="status-pill stable">Stable</span></td>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Action</th>
                         </tr>
-                    </tbody>
+                    </thead>
+                    <tbody id="patient-list-table"></tbody>
                 </table>
             </div>
         </div>
     </main>
 
     <script>
-        // 1. Session Guard
-        if (localStorage.getItem('userRole') !== 'doctor') {
-            window.location.replace('index.html');
-        }
+        let vitalsChart;
+        let selectedPatient = null;
+        const historyPulse = [];
+        const historyLabels = [];
 
-        lucide.createIcons();
-
-        // 2. Navigation Logic
-        function showView(viewId) {
-            // Hide all sections
-            document.querySelectorAll('.view-section').forEach(section => section.classList.remove('active'));
-            // Deactivate all nav links
-            document.querySelectorAll('#main-nav a').forEach(link => link.classList.remove('active'));
-            
-            // Show selected section
-            document.getElementById('view-' + viewId).classList.add('active');
-            // Activate selected nav link
-            document.getElementById('nav-' + viewId).classList.add('active');
-            
-            // Update Title
-            const titles = { overview: 'Dashboard Overview', appointments: 'Appointment Schedule', patients: 'Patient Monitoring' };
-            document.getElementById('view-title').innerText = titles[viewId];
-        }
-
-        // 3. IoT Data Sync
-        const CHANNEL_ID = '3218730';
-        const READ_KEY = 'LD1IMABWITKH2TZK';
-
-        async function updateVitals() {
-            try {
-                const res = await fetch(`https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds.json?api_key=${READ_KEY}&results=1`);
-                const data = await res.json();
-                const feed = data.feeds[0];
-
-                if (feed) {
-                    const p = parseInt(feed.field1);
-                    const t = parseFloat(feed.field2);
-                    
-                    document.getElementById('live-pulse').innerText = p + " bpm";
-                    document.getElementById('live-temp').innerText = t + " °C";
-
-                    const status = document.getElementById('live-status');
-                    const alert = document.getElementById('alert-text');
-
-                    if (p > 100 || p < 60) {
-                        status.innerText = "Critical";
-                        status.className = "status-pill critical";
-                        alert.innerText = "High BPM Alert!";
-                    } else {
-                        status.innerText = "Stable";
-                        status.className = "status-pill stable";
-                        alert.innerText = "System Normal";
-                    }
+        // INSTANT SYNC: Listen for storage events from other tabs
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'patient_vitals' && event.newValue) {
+                const newData = JSON.parse(event.newValue);
+                // Only update if we have a selected patient and the email matches
+                if (selectedPatient && newData.email === selectedPatient.email) {
+                    updateUI(newData.bpm, newData.temp);
+                    console.log("Instant Sync Received!");
                 }
-            } catch (e) { console.log("Sync error"); }
+            }
+        });
+
+        // 1. DATA SYNC LOGIC: Fetching from shared storage (Fallback/Poll)
+        function getPatientDashboardData() {
+            if (!selectedPatient) return null;
+            
+            const sharedData = JSON.parse(localStorage.getItem('patient_vitals')) || {};
+            
+            if (sharedData.email === selectedPatient.email) {
+                return {
+                    pulse: sharedData.bpm || 0,
+                    temp: sharedData.temp || 0,
+                    time: sharedData.timestamp || new Date().toLocaleTimeString()
+                };
+            }
+            return null;
         }
 
-        function handleLogout() {
-            if(confirm("Logout?")) {
-                localStorage.removeItem('userRole');
-                window.location.replace('index.html');
+        document.addEventListener('DOMContentLoaded', () => {
+            const docName = localStorage.getItem('userName') || "Doctor";
+            document.getElementById('view-title').innerText = `Dr. ${docName}`;
+            
+            initChart();
+            loadPatientsFromStorage();
+            lucide.createIcons();
+            
+            // Interval as backup in case storage event doesn't fire
+            setInterval(syncWithPatient, 3000);
+        });
+
+        function syncWithPatient() {
+            const data = getPatientDashboardData();
+            if (data) {
+                updateUI(data.pulse, data.temp);
             }
         }
 
-        setInterval(updateVitals, 15000);
-        updateVitals();
+        function loadPatientsFromStorage() {
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const patients = users.filter(u => u.role === 'patient'); 
+            document.getElementById('stat-patients').innerText = patients.length;
+
+            const tableBody = document.getElementById('patient-list-table');
+            tableBody.innerHTML = patients.map(p => `
+                <tr>
+                    <td><strong>${p.name}</strong></td>
+                    <td>${p.email}</td>
+                    <td><span class="status-pill stable">Online</span></td>
+                    <td>
+                        <button class="btn-action btn-rx" onclick="selectPatient('${p.name}', '${p.email}')">
+                            <i data-lucide="radio" style="width:14px;"></i> Connect
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function selectPatient(name, email) {
+            selectedPatient = { name, email };
+            document.getElementById('monitored-name').innerText = name;
+            historyPulse.length = 0;
+            historyLabels.length = 0;
+            vitalsChart.update();
+            showView('overview');
+        }
+
+        function updateUI(pulse, temp) {
+            if (!pulse || pulse === 0) return;
+
+            document.getElementById('active-pulse-val').innerText = `${pulse} BPM`;
+            
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            if (historyLabels[historyLabels.length - 1] !== now) {
+                historyLabels.push(now);
+                historyPulse.push(pulse);
+                
+                if(historyLabels.length > 10) { 
+                    historyLabels.shift(); 
+                    historyPulse.shift(); 
+                }
+                vitalsChart.update();
+            }
+
+            if (pulse > 100 || pulse < 50) {
+                document.getElementById('stat-alerts').innerText = "1";
+                document.getElementById('bell-icon').style.color = "var(--danger)";
+            } else {
+                document.getElementById('stat-alerts').innerText = "0";
+                document.getElementById('bell-icon').style.color = "var(--success)";
+            }
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('vitalsChart').getContext('2d');
+            vitalsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: historyLabels,
+                    datasets: [{
+                        label: 'Remote BPM',
+                        data: historyPulse,
+                        borderColor: '#5c67f2',
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: 'rgba(92, 103, 242, 0.05)'
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    scales: { y: { min: 40, max: 160 } }
+                }
+            });
+        }
+
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('#main-nav a').forEach(l => l.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+            document.getElementById('nav-' + viewId).classList.add('active');
+        }
+
+        function handleLogout() {
+            if(confirm("Logout?")) window.location.href = 'index.html';
+        }
     </script>
 </body>
 </html>
