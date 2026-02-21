@@ -1,230 +1,173 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="manifest" href="manifest.json">
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js')
-      .then(() => console.log("PWA Registered Successfully"));
-  }
-</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedDash | Access Portal</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>Clinik Pro | Access</title>
     <style>
-        /* --- GLOBAL STYLES --- */
-        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body {
-            background-color: #f3f4f6;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        .login-card {
-            background: white;
-            width: 90%;
-            max-width: 950px;
-            display: flex;
-            border-radius: 30px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            min-height: 650px;
-        }
-
-        /* LEFT BRANDING */
-        .branding-side {
-            width: 50%;
-            background: linear-gradient(135deg, #2563eb 0%, #3b82f6 40%, #06b6d4 100%);
-            padding: 50px;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        /* RIGHT FORM SIDE */
-        .form-side { width: 50%; padding: 50px; display: flex; flex-direction: column; justify-content: center; position: relative; }
-        
-        .form-view { display: none; }
-        .form-view.active { display: block; animation: fadeIn 0.3s ease; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        h2 { font-size: 2rem; margin: 0 0 10px 0; }
-        .form-subtitle { color: #6b7280; margin-bottom: 30px; font-size: 0.95rem; }
-
-        .input-group { margin-bottom: 20px; }
-        .input-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; }
-        .label-row { display: flex; justify-content: space-between; align-items: center; }
-
-        input, select {
-            width: 100%; padding: 12px; border: 1px solid #d1d5db;
-            border-radius: 10px; outline: none; transition: 0.2s; font-size: 0.95rem;
-        }
-        input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-
-        /* BUTTONS */
-        .btn-main {
-            width: 100%; background: #4338ca; color: white; border: none;
-            padding: 14px; border-radius: 10px; font-weight: 600; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            transition: all 0.1s ease; margin-top: 10px;
-        }
-        .btn-main:active { transform: scale(0.96); background: #3730a3; }
-        .btn-icon { width: 18px; transition: transform 0.2s; }
-        .btn-main:hover .btn-icon { transform: translateX(5px); }
-
-        .link-text { color: #4338ca; text-decoration: none; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
-        .link-text:hover { text-decoration: underline; }
-
-        .form-footer { text-align: center; margin-top: 25px; font-size: 0.9rem; color: #6b7280; }
-
-        .divider { display: flex; align-items: center; margin: 25px 0; color: #9ca3af; font-size: 0.75rem; text-transform: uppercase; }
-        .divider::after, .divider::before { content: ""; flex: 1; border-bottom: 1px solid #e5e7eb; margin: 0 10px; }
-
-        .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .social-btn { border: 1px solid #e5e7eb; background: white; padding: 10px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; }
+        :root { --primary: #6366f1; --soft-bg: #c7d2fe; --muted: #94a3b8; }
+        body { background: var(--muted); font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: white; width: 850px; display: flex; border-radius: 40px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.2); min-height: 550px; }
+        .left { width: 40%; background: var(--soft-bg); padding: 40px; color: #4338ca; display: flex; flex-direction: column; justify-content: space-between; }
+        .right { width: 60%; padding: 50px; display: none; flex-direction: column; justify-content: center; }
+        .right.active { display: flex; }
+        input, select { width: 100%; border: none; border-bottom: 1px solid #ddd; padding: 12px 0; outline: none; margin-bottom: 20px; font-size: 1rem; background: transparent; }
+        .btn-main { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .footer { text-align: center; margin-top: 20px; font-size: 0.9rem; color: #888; }
+        .link { color: var(--primary); font-weight: bold; cursor: pointer; }
+        .ts-group { display: flex; gap: 10px; }
+        label { font-size: 0.8rem; color: var(--muted); font-weight: bold; text-transform: uppercase; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="login-card">
-        <div class="branding-side">
-            <div>
-                <p style="opacity:0.8; margin-bottom: 5px;">You can easily</p>
-                <h1 style="font-size:2.5rem; margin:0; line-height: 1.2;">Speed up your work<br>with our Web App</h1>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.8rem; opacity:0.7">
-                <span>Discord</span><span>Instagram</span><span>Spotify</span>
-            </div>
+<div class="card">
+    <div class="left">
+        <div>
+            <h2>Clinik Pro</h2>
+            <p>Secure Healthcare Access. Monitor your vitals and manage appointments seamlessly.</p>
         </div>
-
-        <div class="form-side">
-            
-            <div id="login-view" class="form-view active">
-                <h2>Get Started Now</h2>
-                <p class="form-subtitle">Log in to your account to continue.</p>
-                
-                <form id="loginForm">
-                    <div class="input-group">
-                        <label>Email address</label>
-                        <input type="email" id="loginEmail" placeholder="name@email.com" required>
-                    </div>
-                    
-                    <div class="input-group">
-                        <div class="label-row">
-                            <label>Password</label>
-                            <span class="link-text" onclick="showView('forgot-view')">Forgot Password?</span>
-                        </div>
-                        <input type="password" id="loginPass" placeholder="••••••••" required>
-                    </div>
-
-                    <div class="input-group">
-                        <label>Portal Role</label>
-                        <select id="role" required>
-                            <option value="" disabled selected>Select Role</option>
-                            <option value="patient">Patient</option>
-                            <option value="doctor">Doctor</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="btn-main">
-                        <span>Log in</span>
-                        <i data-lucide="arrow-right" class="btn-icon"></i>
-                    </button>
-                </form>
-
-                <div class="divider">Or</div>
-                <div class="social-grid">
-                    <button class="social-btn"><img src="https://www.svgrepo.com/show/355037/google.svg" width="16"> Google</button>
-                    <button class="social-btn"><i class="fab fa-apple"></i> Apple</button>
-                </div>
-                <p class="form-footer">Don't have an account? <span class="link-text" onclick="showView('register-view')">Sign up</span></p>
-            </div>
-
-            <div id="register-view" class="form-view">
-                <h2>Create Account</h2>
-                <p class="form-subtitle">Join us and manage your health digitally.</p>
-                
-                <form id="registerForm">
-                    <div class="input-group">
-                        <label>Full Name</label>
-                        <input type="text" placeholder="John Doe" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Email address</label>
-                        <input type="email" placeholder="name@email.com" required>
-                    </div>
-                    <div class="input-group">
-                        <label>Create Password</label>
-                        <input type="password" placeholder="••••••••" required>
-                    </div>
-                    <button type="submit" class="btn-main">
-                        <span>Register Now</span>
-                        <i data-lucide="arrow-right" class="btn-icon"></i>
-                    </button>
-                </form>
-                <p class="form-footer">Already have an account? <span class="link-text" onclick="showView('login-view')">Log in</span></p>
-            </div>
-
-            <div id="forgot-view" class="form-view">
-                <h2>Reset Password</h2>
-                <p class="form-subtitle">Enter your email and we'll send you a link to reset your password.</p>
-                
-                <form id="forgotForm">
-                    <div class="input-group">
-                        <label>Email address</label>
-                        <input type="email" placeholder="name@email.com" required>
-                    </div>
-                    <button type="submit" class="btn-main">
-                        <span>Send Reset Link</span>
-                        <i data-lucide="send" class="btn-icon" style="width: 16px;"></i>
-                    </button>
-                </form>
-                <p class="form-footer">Remembered your password? <span class="link-text" onclick="showView('login-view')">Back to Login</span></p>
-            </div>
-
-        </div>
+        <img src="https://cdn-icons-png.flaticon.com/512/3063/3063176.png" alt="Stethoscope" width="100%">
     </div>
 
-    <script>
-        lucide.createIcons();
+    <div class="right" id="reg-view">
+        <h2>Create Account</h2>
+        <form id="regForm">
+            <label>Register As:</label>
+            <select id="regRole" onchange="toggleRegFields()">
+                <option value="patient">I am a Patient</option>
+                <option value="doctor">I am a Doctor</option>
+            </select>
+            <input type="text" id="regName" placeholder="Full Name" required>
+            <label>Date of Birth:</label>
+            <input type="date" id="regDOB" required>
+            <div id="reg-doc-fields" class="hidden">
+                <input type="email" id="regEmail" placeholder="Email Address">
+                <input type="password" id="regPass" placeholder="Create Password">
+            </div>
+            <div id="reg-ts-fields">
+                <div class="ts-group">
+                    <input type="text" id="regTSID" placeholder="ThingSpeak ID">
+                    <input type="text" id="regTSKey" placeholder="Read Key">
+                </div>
+            </div>
+            <button type="submit" class="btn-main">Create Account</button>
+        </form>
+        <p class="footer">Already have an Account? <span class="link" onclick="showView('log-view')">Log in</span></p>
+    </div>
 
-        // --- VIEW SWITCHER ---
-        function showView(viewId) {
-            // Hide all views
-            document.querySelectorAll('.form-view').forEach(view => {
-                view.classList.remove('active');
-            });
-            // Show requested view
-            document.getElementById(viewId).classList.add('active');
+    <div class="right active" id="log-view">
+        <h2>Welcome Back</h2>
+        <form id="loginForm">
+            <label>Login As:</label>
+            <select id="loginRole" onchange="toggleLoginFields()" required>
+                <option value="patient">Patient</option>
+                <option value="doctor">Doctor</option>
+            </select>
+            <div id="doctor-only-fields" class="hidden">
+                <input type="email" id="loginEmail" placeholder="Email Address">
+                <input type="password" id="loginPass" placeholder="Password">
+            </div>
+            <div id="patient-only-fields">
+                <label>Vitals Access:</label>
+                <input type="text" id="channelID" placeholder="ThingSpeak ID">
+                <input type="text" id="apiKey" placeholder="Read API Key">
+            </div>
+            <button type="submit" class="btn-main">Login to Dashboard</button>
+        </form>
+        <p class="footer">New user? <span class="link" onclick="showView('reg-view')">Register</span></p>
+    </div>
+</div>
+
+<script>
+    const API_URL = "http://localhost:5000";
+
+    function showView(id) {
+        document.querySelectorAll('.right').forEach(v => v.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function toggleLoginFields() {
+        const isDoc = document.getElementById('loginRole').value === 'doctor';
+        document.getElementById('doctor-only-fields').classList.toggle('hidden', !isDoc);
+        document.getElementById('patient-only-fields').classList.toggle('hidden', isDoc);
+    }
+
+    function toggleRegFields() {
+        const isDoc = document.getElementById('regRole').value === 'doctor';
+        document.getElementById('reg-doc-fields').classList.toggle('hidden', !isDoc);
+        document.getElementById('reg-ts-fields').classList.toggle('hidden', isDoc);
+    }
+
+    document.getElementById('regForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Use FormData because the backend uses Multer
+        const formData = new FormData();
+        formData.append('name', document.getElementById('regName').value);
+        formData.append('dob', document.getElementById('regDOB').value);
+        formData.append('role', document.getElementById('regRole').value);
+        
+        if (document.getElementById('regRole').value === 'doctor') {
+            formData.append('email', document.getElementById('regEmail').value);
+            formData.append('pass', document.getElementById('regPass').value);
+        } else {
+            formData.append('tsID', document.getElementById('regTSID').value);
+            formData.append('tsKey', document.getElementById('regTSKey').value);
         }
 
-        // --- PREVENT BACK TO LOGIN IF LOGGED IN ---
-        window.onload = () => {
-            if (localStorage.getItem('userRole')) {
-                const role = localStorage.getItem('userRole');
-                window.location.replace(role === 'patient' ? 'patientdashboard.html' : 'doctordashboard.html');
+        try {
+            const response = await fetch(`${API_URL}/register`, {
+                method: 'POST',
+                body: formData // No Headers needed for FormData
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                alert("Success! Registered in MongoDB.");
+                showView('log-view');
+            } else {
+                alert("Registration failed: " + (result.error || "Server error"));
             }
-        };
+        } catch (err) {
+            alert("Is server.js running? Check terminal.");
+        }
+    });
 
-        // --- LOGIN HANDLER ---
-        document.getElementById('loginForm').onsubmit = (e) => {
-            e.preventDefault();
-            const role = document.getElementById('role').value;
-            localStorage.setItem('userRole', role);
-            window.location.replace(role === 'patient' ? 'patientdashboard.html' : 'doctordashboard.html');
-        };
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const role = document.getElementById('loginRole').value;
+        const loginData = { role };
 
-        // --- PREVENT DEFAULT FOR OTHER FORMS ---
-        document.getElementById('registerForm').onsubmit = (e) => { e.preventDefault(); alert('Account created! Please log in.'); showView('login-view'); };
-        document.getElementById('forgotForm').onsubmit = (e) => { e.preventDefault(); alert('Reset link sent to your email!'); showView('login-view'); };
-    </script>
-    
+        if (role === 'doctor') {
+            loginData.email = document.getElementById('loginEmail').value;
+            loginData.pass = document.getElementById('loginPass').value;
+        } else {
+            loginData.tsID = document.getElementById('channelID').value;
+            loginData.tsKey = document.getElementById('apiKey').value;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(loginData)
+            });
+
+            const user = await response.json();
+            if (response.ok) {
+                localStorage.setItem('userData', JSON.stringify(user));
+                window.location.href = (role === 'doctor') ? 'doctordashboard.html' : 'patientdashboard.html';
+            } else {
+                alert(user.error || "Login Failed");
+            }
+        } catch (err) {
+            alert("Server Error.");
+        }
+    });
+
+    window.onload = () => { toggleLoginFields(); toggleRegFields(); };
+</script>
 </body>
 </html>
